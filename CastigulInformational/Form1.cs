@@ -38,12 +38,15 @@ namespace CastigulInformational
                     writer.WriteLine($"{entry.Key}: {entry.Value}");
                 }
 
+                /*double entropieGenerala = CalculEntropieGenerala();
+                writer.WriteLine(entropieGenerala);*/
+
                 List<string> wordsResult = TakeWords();
-                writer.WriteLine("\nCuvinte:");
+                /*writer.WriteLine("\nCuvinte:");
                 foreach (var word in wordsResult)
                 {
                     writer.WriteLine(word);
-                }
+                }*/
 
                 Dictionary<string, int> counts = numberOfWords();
                 writer.WriteLine("\nNumar aparitii cuvinte din toate documentele:");
@@ -52,14 +55,14 @@ namespace CastigulInformational
                     writer.WriteLine($"{entry.Key}: {entry.Value}");
                 }
 
-                Dictionary<int, double> E2 = CalculateE2();
+                Dictionary<int, double> E2 = CalculateE2().OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
                 writer.WriteLine("\nCalcul E2:");
                 foreach (var entry in E2)
                 {
                     writer.WriteLine($"{entry.Key}: {entry.Value}");
                 }
 
-                Dictionary<int, double> E3 = CalculateE3();
+                Dictionary<int, double> E3 = CalculateE3().OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
                 writer.WriteLine("\nCalcul E3:");
                 foreach (var entry in E3)
                 {
@@ -71,19 +74,29 @@ namespace CastigulInformational
                 foreach (var i in wordsResult)
                 {
                     int word = int.Parse(i);
-                    double p = entropieGenerala + E2[word] + E3[word];
+                    double p = entropieGenerala - E2[word] - E3[word];
                     castigInformational.Add(p);
                 }
 
-                double prag = 1;
+                double prag = -100;
                 writer.WriteLine("\nRezultate:");
-                foreach (var i in castigInformational)
+
+                for (int i = 0; i < castigInformational.Count; i++)
+                {
+                    if (castigInformational[i] >= prag)
+                    {
+                        writer.Write(wordsResult[i] + ": ");
+                        writer.WriteLine(castigInformational[i]);
+                    }
+                }
+
+                /*foreach (var i in castigInformational)
                 {
                     if (i >= prag)
                     {
                         writer.WriteLine(i);
                     }
-                }
+                }*/
             }
         }
 
@@ -103,7 +116,7 @@ namespace CastigulInformational
                         }
                         else if (words[0] == "@topic")
                         {
-                            topics[words[1]] = int.Parse(words[2]);
+                            topics[words[1]] = int.Parse(words[3]);
                         }
                         else if (words[0][0] == '#')
                         {
@@ -151,7 +164,10 @@ namespace CastigulInformational
                     {
                         foreach (var documentData in subKey.Key.Item2)
                         {
-                            result.AddRange(documentData);
+                            foreach (var word in documentData[0].Split(' '))
+                            {
+                                result.Add(word);
+                            }
                         }
                     }
                 }
@@ -167,6 +183,7 @@ namespace CastigulInformational
                     // Handle other cases or raise an exception if unexpected type
                 }*/
             }
+            result = result.Distinct().ToList();
             return result;
         }
 
@@ -175,11 +192,10 @@ namespace CastigulInformational
         private double CalculEntropieGenerala()
         {
             double entropieGenerala = 0;
-            int toateDocumentele = topics.Values.Sum();
             foreach (var entry in topics)
             {
-                double p = entry.Value / (double)toateDocumentele;
-                entropieGenerala += p * Math.Log2(p);
+                double p = entry.Value / (double)numberOfFiles;
+                entropieGenerala += (p * Math.Log2(p)) * -1;
             }
             return entropieGenerala;
         }
